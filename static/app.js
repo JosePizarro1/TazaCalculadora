@@ -61,17 +61,28 @@ document.addEventListener("DOMContentLoaded", () => {
     function calculateValues(rates) {
         const amount = parseFloat(inputAmount.value) || 0;
 
+        // El margen lo dejo por defecto en 3.0% (como el Excel que mandaste)
+        // para que las ganancias no den cero, pero oculto el input para no romper el diseño.
+        const margin = 3.0;
+
         // Tasa Real Mercado (Cross Rate) de Binance (Ej: 1 CLP = 0.0034 PEN)
         const marketCross = rates.market_cross;
         marketRate.textContent = marketCross.toFixed(8);
 
         // Tasa Ajustada (Inversa de lo que damos al cliente)
-        const inverseRate = 1 / marketCross;
+        const inverseRate = 1 / (marketCross * (1 - (margin / 100)));
         finalRate.textContent = inverseRate.toFixed(4);
 
-        // Cuánto recibe el cliente final (Sin margen)
-        const customerReceive = amount * marketCross;
+        // Cuánto recibe el cliente final (Con margen automático del 3%)
+        const customerReceive = amount * marketCross * (1 - (margin / 100));
         displayResult.textContent = customerReceive.toLocaleString("es-CL", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+        // Ganancias Dinámicas
+        const gainSend = amount * (margin / 100);
+        const gainReceive = (amount * marketCross) * (margin / 100);
+
+        document.getElementById("profitOrigin").textContent = gainSend.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById("profitDest").textContent = gainReceive.toLocaleString("es-CL", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 
         // Resumen Dinámico
         const originCode = fiatOrigin.value;
