@@ -12,84 +12,149 @@
 
 <body>
 
+    <div class="ticker-wrap">
+        <div class="ticker">
+            <div class="ticker__item"><span class="flag">🇻🇪</span> VENEZUELA <span class="time"
+                    data-timezone="America/Caracas">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇨🇴</span> COLOMBIA <span class="time"
+                    data-timezone="America/Bogota">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇵🇪</span> PERÚ <span class="time"
+                    data-timezone="America/Lima">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇧🇷</span> BRASIL <span class="time"
+                    data-timezone="America/Sao_Paulo">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇨🇱</span> CHILE <span class="time"
+                    data-timezone="America/Santiago">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇦🇷</span> ARGENTINA <span class="time"
+                    data-timezone="America/Argentina/Buenos_Aires">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇲🇽</span> MÉXICO <span class="time"
+                    data-timezone="America/Mexico_City">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇩🇴</span> REP. DOMINICANA <span class="time"
+                    data-timezone="America/Santo_Domingo">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇬🇹</span> GUATEMALA <span class="time"
+                    data-timezone="America/Guatemala">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇭🇳</span> HONDURAS <span class="time"
+                    data-timezone="America/Tegucigalpa">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇳🇮</span> NICARAGUA <span class="time"
+                    data-timezone="America/Managua">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇨🇷</span> COSTA RICA <span class="time"
+                    data-timezone="America/Costa_Rica">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇵🇦</span> PANAMÁ <span class="time"
+                    data-timezone="America/Panama">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇵🇾</span> PARAGUAY <span class="time"
+                    data-timezone="America/Asuncion">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇺🇾</span> URUGUAY <span class="time"
+                    data-timezone="America/Montevideo">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇨🇦</span> CANADÁ <span class="time"
+                    data-timezone="America/Toronto">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇺🇸</span> USA <span class="time"
+                    data-timezone="America/New_York">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇪🇺</span> EUROPA <span class="time"
+                    data-timezone="Europe/Madrid">--:--:--</span></div>
+            <!-- Duplicados para el scroll infinito -->
+            <div class="ticker__item"><span class="flag">🇻🇪</span> VENEZUELA <span class="time"
+                    data-timezone="America/Caracas">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇨🇴</span> COLOMBIA <span class="time"
+                    data-timezone="America/Bogota">--:--:--</span></div>
+            <div class="ticker__item"><span class="flag">🇵🇪</span> PERÚ <span class="time"
+                    data-timezone="America/Lima">--:--:--</span></div>
+        </div>
+    </div>
+
     <main class="main-container">
         <header class="hero">
-            <h1 class="hero-title">Calculadora <span class="gradient-text">P2P Remesas</span></h1>
+            <h1 class="hero-title">Cambios <span class="gradient-text">TazaCalculadora</span></h1>
+            <p class="hero-subtitle">Tasas en vivo y conversión instantánea de divisas</p>
         </header>
 
-        <section class="calculator-card">
-            <!-- Resultado Principal -->
-            <div class="result-hero">
-                <div class="result-label">EL CLIENTE RECIBE</div>
-                <div class="result-value-big">
-                    <span id="displayResult">0.00</span>
-                    <span style="font-size: 1.5rem;" id="destSymbol">S/</span>
-                </div>
-                <div id="summaryText" style="color: var(--text-muted); font-size: 0.85rem;">Cargando tasas...</div>
+        <section class="live-rates-section">
+            <h2 class="section-title">TASAS DE CAMBIO</h2>
+            <div class="rates-grid" id="ratesGrid">
+                <!-- Tarjetas cargadas dinámicamente -->
+                <div class="rate-card-skeleton"></div>
+                <div class="rate-card-skeleton"></div>
+                <div class="rate-card-skeleton"></div>
+                <div class="rate-card-skeleton"></div>
+                <div class="rate-card-skeleton"></div>
             </div>
+        </section>
 
-            <!-- Inputs -->
-            <div class="input-row">
-                <div class="input-group">
-                    <label class="input-label">Monto a Enviar</label>
-                    <input type="number" id="inputAmount" class="custom-input" value="1500">
-                </div>
-                <div class="input-group">
-                    <label class="input-label">Moneda Origen</label>
-                    <select id="fiatOrigin" class="custom-select">
-                        {% for code, info in fiat_currencies.items() %}
-                        <option value="{{ code }}" {% if code=='CLP' %}selected{% endif %}>{{ info.flag }} {{ code }} —
-                            {{ info.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label class="input-label">Moneda Destino</label>
-                    <select id="fiatDest" class="custom-select">
-                        {% for code, info in fiat_currencies.items() %}
-                        <option value="{{ code }}" {% if code=='PEN' %}selected{% endif %}>{{ info.flag }} {{ code }} —
-                            {{ info.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
+        <section class="calculator-section">
+            <h2 class="section-title">CALCULADORA</h2>
 
-            <!-- Tasas y Resumen -->
-            <div style="display: grid; grid-template-columns: 180px 1fr; gap: 20px; margin-bottom: 24px;">
-                <div class="metrics-column">
-                    <div class="metric-card" style="margin-bottom: 15px;">
-                        <div class="metric-title">TASA:</div>
-                        <div class="metric-value" id="marketRate" style="font-size: 0.9rem;">0.00000000</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-title">TASA AJUSTADA:</div>
-                        <div class="metric-value" id="finalRate" style="color: var(--gold-primary);">0.00</div>
-                    </div>
+            <div class="calculator-card-new">
+                <div class="calc-tabs">
+                    <button class="tab-btn active" data-tab="envia">
+                        <span class="icon">✈️</span> ENVÍA
+                    </button>
+                    <button class="tab-btn" data-tab="recibe">
+                        <span class="icon">📩</span> RECIBE
+                    </button>
                 </div>
 
-                <div class="summary-container">
-                    <div class="input-label"
-                        style="text-align: center; color: var(--gold-primary); margin-bottom: 5px;">RESUMEN</div>
-                    <div class="summary-box" id="summaryBox">
-                        POR ENVIAR <span id="sumAmount">0</span> <span id="sumOrigin">CLP</span> RECIBE <span
-                            id="sumResult">0.00</span> <span id="sumDest">S/</span>
-                    </div>
-
-                    <!-- Ganancias (Volviendo a ponerlas como pidió el usuario) -->
-                    <div class="profit-grid" style="margin-top: 15px;">
-                        <div class="profit-card">
-                            <div class="metric-title" style="color: var(--gold-light);">GANANCIA POR ENVIAR</div>
-                            <div class="metric-value" id="profitOrigin">0.00</div>
-                        </div>
-                        <div class="profit-card">
-                            <div class="metric-title" style="color: var(--gold-light);">GANANCIA POR RECIBIR</div>
-                            <div class="metric-value" id="profitDest">0.00</div>
+                <div class="calc-content">
+                    <div class="input-container">
+                        <label class="input-label-new">ELLOS ENVÍAN</label>
+                        <div class="input-wrapper">
+                            <select id="fiatOrigin" class="currency-select">
+                                {% for code, info in fiat_currencies.items() %}
+                                <option value="{{ code }}" {% if code=='CLP' %}selected{% endif %}>{{ code }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" id="inputAmount" class="amount-input" value="1500">
                         </div>
                     </div>
+
+                    <div class="margin-container">
+                        <label class="input-label-new">MARGEN %</label>
+                        <input type="number" id="commission" class="margin-input" value="3" step="0.1">
+                    </div>
+
+                    <div class="swap-divider">
+                        <button id="btnSwap" class="swap-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="input-container">
+                        <label class="input-label-new">TÚ RECIBES</label>
+                        <div class="input-wrapper">
+                            <select id="fiatDest" class="currency-select">
+                                {% for code, info in fiat_currencies.items() %}
+                                <option value="{{ code }}" {% if code=='PEN' %}selected{% endif %}>{{ code }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="displayResult" class="amount-display">0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="info-footer">
+                        <div class="info-item">
+                            <span class="info-label">TASA:</span>
+                            <span id="marketRate" class="info-value">0.00000000</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">TASA AJUSTADA:</span>
+                            <span id="finalRate" class="info-value highlighted">0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="profit-summary">
+                        <div class="profit-item">
+                            <span class="info-label">GANANCIA ORIGEN:</span>
+                            <span id="profitOrigin" class="info-value">0.00</span>
+                        </div>
+                        <div class="profit-item">
+                            <span class="info-label">GANANCIA DESTINO:</span>
+                            <span id="profitDest" class="info-value">0.00</span>
+                        </div>
+                    </div>
+
+                    <button id="btnCalculate" class="btn-refresh">ACTUALIZAR TASAS</button>
                 </div>
             </div>
-
-            <button id="btnCalculate" class="btn-primary">Actualizar Tasas en Vivo</button>
         </section>
     </main>
 

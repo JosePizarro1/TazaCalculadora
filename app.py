@@ -24,6 +24,14 @@ FIAT_CURRENCIES = {
     "USD": {"name": "Panamá/USA", "symbol": "$", "flag": "🇺🇸"},
     "EUR": {"name": "España/Europa", "symbol": "€", "flag": "🇪🇺"},
     "DOP": {"name": "Rep. Dominicana", "symbol": "RD$", "flag": "🇩🇴"},
+    "GTQ": {"name": "Guatemala", "symbol": "Q", "flag": "🇬🇹"},
+    "HNL": {"name": "Honduras", "symbol": "L", "flag": "🇭🇳"},
+    "NIO": {"name": "Nicaragua", "symbol": "C$", "flag": "🇳🇮"},
+    "CRC": {"name": "Costa Rica", "symbol": "₡", "flag": "🇨🇷"},
+    "PAB": {"name": "Panamá", "symbol": "B/.", "flag": "🇵🇦"},
+    "PYG": {"name": "Paraguay", "symbol": "₲", "flag": "🇵🇾"},
+    "UYU": {"name": "Uruguay", "symbol": "$U", "flag": "🇺🇾"},
+    "CAD": {"name": "Canadá", "symbol": "$", "flag": "🇨🇦"},
 }
 
 def fetch_best_rate(fiat: str, trade_type: str, asset: str = "USDT"):
