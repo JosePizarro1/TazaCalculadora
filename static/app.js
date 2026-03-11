@@ -146,6 +146,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const data = await response.json();
+            console.log(`[TASAS] Actualización solicitada: ${fiatOrigin.value} -> ${fiatDest.value}`);
+            console.log("[DATA API]", data);
 
             if (data.success) {
                 calculateValues(data.rates);
@@ -163,6 +165,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function calculateValues(rates) {
         const amount = parseFloat(inputAmount.value) || 0;
         const margin = parseFloat(commission.value) || 0;
+        
+        console.log(`[CÁLCULO] Monto: ${amount}, Margen: ${margin}%`);
 
         // Tasa Real Mercado (Cross Rate) de Binance
         const marketCross = rates.market_cross;
@@ -179,6 +183,8 @@ document.addEventListener("DOMContentLoaded", () => {
             minimumFractionDigits: 3,
             maximumFractionDigits: 3
         });
+
+        console.log(`[RESULTADO] Cliente recibe: ${customerReceive} | Tasa Ajustada: ${adjustedRate}`);
 
         // Ganancias
         const gainOrigin = amount * (margin / 100);

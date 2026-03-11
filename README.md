@@ -61,6 +61,7 @@ El servidor se iniciará por defecto en: [http://127.0.0.1:5001](http://127.0.0.
 - `app.py`: Backend en Flask, maneja la lógica de la API y las peticiones a Binance.
 - `templates/`: Contiene el archivo `index.html`.
 - `static/`:
+  - `favicon.png`: Icono personalizado de la aplicación.
   - `styles.css`: Estilos personalizados (Glassmorphism, Dark Mode).
   - `app.js`: Lógica del frontend, actualizaciones de DOM y cálculos locales.
 - `requirements.txt`: Lista de dependencias del proyecto.
