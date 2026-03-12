@@ -94,11 +94,11 @@
 
                 <div class="calc-content">
                     <div class="input-container">
-                        <label class="input-label-new">ELLOS ENVÍAN</label>
+                        <label class="input-label-new" id="labelOrigin">TÚ ENVÍAS</label>
                         <div class="input-wrapper">
                             <select id="fiatOrigin" class="currency-select">
                                 {% for code, info in fiat_currencies.items() %}
-                                <option value="{{ code }}" {% if code=='CLP' %}selected{% endif %}>{{ code }}</option>
+                                <option value="{{ code }}" {% if code=='CLP' %}selected{% endif %}>{{ info.flag }} {{ code }}</option>
                                 {% endfor %}
                             </select>
                             <input type="number" id="inputAmount" class="amount-input" value="1500">
@@ -120,11 +120,11 @@
                     </div>
 
                     <div class="input-container">
-                        <label class="input-label-new">TÚ RECIBES</label>
+                        <label class="input-label-new" id="labelDest">ELLOS RECIBEN</label>
                         <div class="input-wrapper">
                             <select id="fiatDest" class="currency-select">
                                 {% for code, info in fiat_currencies.items() %}
-                                <option value="{{ code }}" {% if code=='PEN' %}selected{% endif %}>{{ code }}</option>
+                                <option value="{{ code }}" {% if code=='PEN' %}selected{% endif %}>{{ info.flag }} {{ code }}</option>
                                 {% endfor %}
                             </select>
                             <div id="displayResult" class="amount-display">0.00</div>

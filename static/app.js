@@ -59,11 +59,21 @@ document.addEventListener("DOMContentLoaded", () => {
     updateClocks();
 
     // --- Tab Switching ---
+    const labelOrigin = document.getElementById("labelOrigin");
+    const labelDest = document.getElementById("labelDest");
+
     tabBtns.forEach(btn => {
         btn.addEventListener("click", () => {
             tabBtns.forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
-            // Aquí puedes cambiar la lógica según la pestaña si es necesario
+
+            if (btn.dataset.tab === "envia") {
+                labelOrigin.textContent = "TÚ ENVÍAS";
+                labelDest.textContent = "ELLOS RECIBEN";
+            } else if (btn.dataset.tab === "recibe") {
+                labelOrigin.textContent = "ELLOS ENVÍAN";
+                labelDest.textContent = "TÚ RECIBES";
+            }
         });
     });
 

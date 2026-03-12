@@ -106,6 +106,7 @@ body {
 .gradient-text {
     background: linear-gradient(135deg, #7ad3ff, #0ECB81);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -281,6 +282,11 @@ body {
     border-right: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
     outline: none;
+}
+
+.currency-select option {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
 }
 
 .amount-input {

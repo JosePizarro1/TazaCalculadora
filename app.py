@@ -37,16 +37,17 @@ FIAT_CURRENCIES = {
 def fetch_best_rate(fiat: str, trade_type: str, asset: str = "USDT"):
     """Obtiene la mejor tasa para una moneda específica."""
     payload = {
-        "fiat": fiat,
         "page": 1,
         "rows": 5,
-        "tradeType": trade_type,
-        "asset": asset,
-        "countries": [],
-        "proMerchantAds": False,
-        "shieldMerchantAds": False,
-        "publisherType": None,
         "payTypes": [],
+        "classifies": [
+            "mass",
+            "profession"
+        ],
+        "asset": asset,
+        "tradeType": trade_type,
+        "fiat": fiat,
+        "publisherType": None,
     }
     headers = {"Content-Type": "application/json"}
     try:
@@ -54,9 +55,29 @@ def fetch_best_rate(fiat: str, trade_type: str, asset: str = "USDT"):
         data = response.json()
         if data.get("data") and len(data["data"]) > 0:
             return float(data["data"][0]["adv"]["price"])
-        return 0
+        
+        # Fallback a SPOT si no hay resultados de P2P (ej, para BRL a veces falla la API de P2P o no hay)
+        return fetch_spot_rate(fiat)
     except:
-        return 0
+        return fetch_spot_rate(fiat)
+
+def fetch_spot_rate(fiat: str):
+    """Fallback: Obtiene la tasa de Spot de Binance si P2P falla."""
+    symbols = [f"USDT{fiat}", f"{fiat}USDT"]
+    for symbol in symbols:
+        url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
+        try:
+            response = req.get(url, timeout=3)
+            data = response.json()
+            if "price" in data:
+                price = float(data["price"])
+                if symbol.startswith("USDT"):
+                    return price
+                else:
+                    return 1.0 / price
+        except:
+            pass
+    return 0
 
 @app.route("/")
 def index():
