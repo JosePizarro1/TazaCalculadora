@@ -71,9 +71,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 labelOrigin.textContent = "TÚ ENVÍAS";
                 labelDest.textContent = "ELLOS RECIBEN";
             } else if (btn.dataset.tab === "recibe") {
-                labelOrigin.textContent = "ELLOS ENVÍAN";
-                labelDest.textContent = "TÚ RECIBES";
+                labelOrigin.textContent = "ELLOS RECIBEN";
+                labelDest.textContent = "TÚ ENVÍAS";
             }
+            
+            // Recalcular al cambiar de pestaña
+            const currentRate = parseFloat(marketRate.textContent);
+            if (currentRate) calculateValues({ market_cross: currentRate });
         });
     });
 
@@ -175,30 +179,39 @@ document.addEventListener("DOMContentLoaded", () => {
     function calculateValues(rates) {
         const amount = parseFloat(inputAmount.value) || 0;
         const margin = parseFloat(commission.value) || 0;
+        const activeTab = document.querySelector(".tab-btn.active").dataset.tab;
         
-        console.log(`[CÁLCULO] Monto: ${amount}, Margen: ${margin}%`);
+        console.log(`[CÁLCULO] Modo: ${activeTab}, Monto: ${amount}, Margen: ${margin}%`);
 
         // Tasa Real Mercado (Cross Rate) de Binance
         const marketCross = rates.market_cross;
         marketRate.textContent = marketCross.toFixed(8);
 
-        // Tasa Ajustada (Inversa que se muestra al cliente)
+        // Tasa Ajustada (Inversa que se muestra al cliente: ej. cuántos pesos cuesta 1 sol)
         const adjustedRate = marketCross * (1 - (margin / 100));
         const inverseRate = 1 / adjustedRate;
         finalRate.textContent = inverseRate.toFixed(4);
 
-        // Cuánto recibe el cliente final
-        const customerReceive = amount * adjustedRate;
-        displayResult.textContent = customerReceive.toLocaleString("es-CL", {
-            minimumFractionDigits: 3,
-            maximumFractionDigits: 3
+        let finalInputAmount = amount;
+        let finalOutputAmount = 0;
+
+        if (activeTab === "envia") {
+            // El usuario ingresa origen, calculamos destino
+            finalOutputAmount = amount * adjustedRate;
+        } else {
+            // El usuario ingresa lo que quiere recibir (destino), calculamos cuánto debe enviar (origen)
+            finalOutputAmount = amount / adjustedRate;
+            finalInputAmount = finalOutputAmount; // La ganancia se calcula sobre el monto enviado
+        }
+
+        displayResult.textContent = finalOutputAmount.toLocaleString("es-CL", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         });
 
-        console.log(`[RESULTADO] Cliente recibe: ${customerReceive} | Tasa Ajustada: ${adjustedRate}`);
-
-        // Ganancias
-        const gainOrigin = amount * (margin / 100);
-        const gainDest = (amount * marketCross) * (margin / 100);
+        // Ganancias calculadas sobre el volumen en moneda de origen
+        const gainOrigin = finalInputAmount * (margin / 100);
+        const gainDest = (finalInputAmount * marketCross) * (margin / 100);
 
         profitOrigin.textContent = gainOrigin.toLocaleString("es-CL", {
             minimumFractionDigits: 2,
