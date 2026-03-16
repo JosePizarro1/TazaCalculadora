@@ -17,67 +17,58 @@ FIAT_CURRENCIES = {
     "COP": {"name": "Colombia", "symbol": "$", "flag": "🇨🇴"},
     "ARS": {"name": "Argentina", "symbol": "$", "flag": "🇦🇷"},
     "BRL": {"name": "Brasil", "symbol": "R$", "flag": "🇧🇷"},
-    "MXN": {"name": "México", "symbol": "$", "flag": "🇲🇽"},
     "PEN": {"name": "Perú", "symbol": "S/", "flag": "🇵🇪"},
     "CLP": {"name": "Chile", "symbol": "$", "flag": "🇨🇱"},
-    "BOB": {"name": "Bolivia", "symbol": "Bs", "flag": "🇧🇴"},
-    "USD": {"name": "Panamá/USA", "symbol": "$", "flag": "🇺🇸"},
-    "EUR": {"name": "España/Europa", "symbol": "€", "flag": "🇪🇺"},
-    "DOP": {"name": "Rep. Dominicana", "symbol": "RD$", "flag": "🇩🇴"},
-    "GTQ": {"name": "Guatemala", "symbol": "Q", "flag": "🇬🇹"},
+    "USD": {"name": "USA", "symbol": "$", "flag": "🇺🇸"},
     "HNL": {"name": "Honduras", "symbol": "L", "flag": "🇭🇳"},
-    "NIO": {"name": "Nicaragua", "symbol": "C$", "flag": "🇳🇮"},
-    "CRC": {"name": "Costa Rica", "symbol": "₡", "flag": "🇨🇷"},
-    "PAB": {"name": "Panamá", "symbol": "B/.", "flag": "🇵🇦"},
-    "PYG": {"name": "Paraguay", "symbol": "₲", "flag": "🇵🇾"},
-    "UYU": {"name": "Uruguay", "symbol": "$U", "flag": "🇺🇾"},
-    "CAD": {"name": "Canadá", "symbol": "$", "flag": "🇨🇦"},
+    "ECU": {"name": "Ecuador", "symbol": "$", "flag": "🇪🇨"},
 }
 
-def fetch_best_rate(fiat: str, trade_type: str, asset: str = "USDT"):
-    """Obtiene la mejor tasa para una moneda específica."""
+def fetch_best_rate(fiat: str, trade_type: str, amount: float = 0, asset: str = "USDT"):
+    """Obtiene la mejor tasa P2P directa de Binance."""
+    # ECU usa USD en Binance
+    binance_fiat = "USD" if fiat == "ECU" else fiat
+
     payload = {
-        "page": 1,
-        "rows": 5,
-        "payTypes": [],
-        "classifies": [
-            "mass",
-            "profession"
-        ],
         "asset": asset,
-        "tradeType": trade_type,
-        "fiat": fiat,
+        "fiat": binance_fiat,
+        "merchantCheck": False,
+        "page": 1,
+        "payTypes": [],
         "publisherType": None,
+        "rows": 10,
+        "tradeType": trade_type,
+        "transAmount": amount if amount > 0 else None,
+        "classifies": ["mass", "profession", "tier1", "tier2"]
     }
-    headers = {"Content-Type": "application/json"}
+    
+    headers = {
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Content-Type": "application/json",
+        "Origin": "https://p2p.binance.com",
+        "Referer": "https://p2p.binance.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    }
+
     try:
-        response = req.post(BINANCE_P2P_URL, json=payload, headers=headers, timeout=5)
+        response = req.post(BINANCE_P2P_URL, json=payload, headers=headers, timeout=10)
         data = response.json()
         if data.get("data") and len(data["data"]) > 0:
             return float(data["data"][0]["adv"]["price"])
         
-        # Fallback a SPOT si no hay resultados de P2P (ej, para BRL a veces falla la API de P2P o no hay)
-        return fetch_spot_rate(fiat)
-    except:
-        return fetch_spot_rate(fiat)
-
-def fetch_spot_rate(fiat: str):
-    """Fallback: Obtiene la tasa de Spot de Binance si P2P falla."""
-    symbols = [f"USDT{fiat}", f"{fiat}USDT"]
-    for symbol in symbols:
-        url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
-        try:
-            response = req.get(url, timeout=3)
+        # Si no hay anuncios con el monto específico, reintenta sin monto para tener una referencia
+        if amount > 0:
+            payload["transAmount"] = None
+            response = req.post(BINANCE_P2P_URL, json=payload, headers=headers, timeout=10)
             data = response.json()
-            if "price" in data:
-                price = float(data["price"])
-                if symbol.startswith("USDT"):
-                    return price
-                else:
-                    return 1.0 / price
-        except:
-            pass
-    return 0
+            if data.get("data") and len(data["data"]) > 0:
+                return float(data["data"][0]["adv"]["price"])
+                
+        return 0
+    except Exception as e:
+        print(f"Error fetching P2P for {fiat}: {e}")
+        return 0
 
 @app.route("/")
 def index():
@@ -88,32 +79,33 @@ def remittance():
     data = request.get_json()
     fiat_origin = data.get("fiat_origin", "CLP")
     fiat_dest = data.get("fiat_dest", "PEN")
+    amount = float(data.get("amount", 0))
     
-    # Tasa para COMPRAR USDT con moneda de origen (Ej: CLP -> USDT)
-    rate_origin = fetch_best_rate(fiat_origin, "BUY")
+    rate_origin = fetch_best_rate(fiat_origin, "BUY", amount)
+    approx_usdt = amount / rate_origin if rate_origin > 0 else 0
+    rate_dest = fetch_best_rate(fiat_dest, "SELL", approx_usdt)
     
-    # Tasa para VENDER USDT y recibir moneda de destino (Ej: USDT -> PEN)
-    rate_dest = fetch_best_rate(fiat_dest, "SELL")
+    if fiat_origin in ["USD", "ECU"] and rate_origin > 1.0: rate_origin = 1.0
+    if fiat_dest in ["USD", "ECU"] and rate_dest > 1.0: rate_dest = 1.0
     
-    if rate_origin > 0 and rate_dest > 0:
-        # Tasa de mercado (Cross rate)
-        # 1 PEN = (rate_origin / rate_dest) CLP? No.
-        # Monto_Dest = (Monto_Orig / rate_origin) * rate_dest
-        # Tasa real = rate_dest / rate_origin
-        market_cross_rate = rate_dest / rate_origin
-        
-        return jsonify({
-            "success": True,
-            "rates": {
-                "origin_p2p": rate_origin,
-                "dest_p2p": rate_dest,
-                "market_cross": market_cross_rate
-            },
-            "fiat_origin": FIAT_CURRENCIES.get(fiat_origin),
-            "fiat_dest": FIAT_CURRENCIES.get(fiat_dest)
-        })
+    if rate_origin == 0 or rate_dest == 0:
+        error_msg = ""
+        if rate_origin == 0: error_msg += f"No hay anuncios ni tasa manual para {fiat_origin}. "
+        if rate_dest == 0: error_msg += f"No hay anuncios ni tasa manual para {fiat_dest}."
+        return jsonify({"success": False, "error": error_msg})
     
-    return jsonify({"success": False, "error": "No se pudieron obtener las tasas."})
+    market_cross_rate = rate_dest / rate_origin
+    
+    return jsonify({
+        "success": True,
+        "rates": {
+            "origin_p2p": rate_origin,
+            "dest_p2p": rate_dest,
+            "market_cross": market_cross_rate
+        },
+        "fiat_origin": FIAT_CURRENCIES.get(fiat_origin),
+        "fiat_dest": FIAT_CURRENCIES.get(fiat_dest)
+    })
 
 if __name__ == "__main__":
     # Usamos el puerto 5001 para evitar conflictos en Mac
