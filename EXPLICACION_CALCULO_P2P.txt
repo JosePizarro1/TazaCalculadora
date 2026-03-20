@@ -1,0 +1,75 @@
+================================================================================
+          EXPLICACIÓN DEL MÉTODO DE CÁLCULO - TAZACALCULADORA (BINANCE P2P)
+================================================================================
+
+Este documento explica cómo la aplicación calcula el envío de remesas entre países
+utilizando el mercado P2P de Binance como fuente de datos en tiempo real.
+
+--------------------------------------------------------------------------------
+1. EL CONCEPTO DEL "PUENTE" (USDT)
+--------------------------------------------------------------------------------
+En el mercado P2P no existe una cotización directa "Chile a Venezuela" o "Perú a
+Colombia". Por eso, la calculadora utiliza el USDT (Dólar Digital) como puente.
+
+El proceso simula dos operaciones reales en Binance:
+   A. COMPRAR USDT con la moneda local del país de origen (ej: CLP).
+   B. VENDER ese USDT para recibir la moneda del país de destino (ej: VES).
+
+--------------------------------------------------------------------------------
+2. PASO A PASO DEL CÁLCULO (Ejemplo: 100 CLP -> VES con 3% de Margen)
+--------------------------------------------------------------------------------
+
+PASO 1: Consulta de Compra (Origen)
+La calculadora se conecta a Binance P2P y busca los anuncios de "COMPRA" (BUY)
+en Chile. Obtiene el mejor precio disponible para que tú (como operador) 
+pudieras comprar USDT.
+   Ejemplo: 1 USDT = 914.00 CLP
+
+PASO 2: Conversión a USDT
+Se divide el monto que recibes del cliente por la tasa de compra.
+   Cálculo: 100 CLP / 914.00 = 0.1094 USDT
+
+PASO 3: Consulta de Venta (Destino)
+La calculadora busca los anuncios de "VENTA" (SELL) en Venezuela. Esto es el
+precio al que tú podrías vender esos USDT para obtener Bolívares.
+   Ejemplo: 1 USDT = 670.00 VES
+
+PASO 4: Tasa de Mercado Directa (Cross Rate)
+Es la relación pura entre ambas monedas sin ganancias.
+   Cálculo: (Tasa Destino / Tasa Origen)
+   Ejemplo: 670.00 / 914.00 = 0.73304158 VES/CLP
+
+PASO 5: Aplicación del Margen (%)
+Aquí es donde la aplicación resta tu comisión para que tú obtengas beneficio.
+Si tu margen es 3%, la tasa que le das al cliente es un 3% menor a la de mercado.
+   Cálculo: Tasa Mercado * (1 - 0.03)
+   Ejemplo: 0.73304158 * 0.97 = 0.71105033 VES/CLP
+
+PASO 6: Resultado Final
+Se multiplica el monto inicial por la tasa final.
+   Cálculo: 100 CLP * 0.71105033 = 71.11 VES
+
+--------------------------------------------------------------------------------
+3. ¿QUÉ PASA SI NO HAY ANUNCIOS?
+--------------------------------------------------------------------------------
+Binance P2P requiere montos mínimos (ej: 100,000 CLP). Si tú pones un monto
+pequeño (ej: 100 CLP), Binance diría "No hay anuncios". 
+
+Para solucionar esto, la aplicación hace lo siguiente:
+1. Busca anuncios por el monto exacto ingresado.
+2. Si no hay, hace una segunda búsqueda "General" sin filtro de monto.
+3. Esto garantiza que siempre obtengas la TASA DE MERCADO actual de Binance,
+   aunque el envío sea pequeño para los estándares de los comerciantes.
+
+--------------------------------------------------------------------------------
+4. RESUMEN DE FÓRMULAS
+--------------------------------------------------------------------------------
+- USDT_PUENTE = MONTO_ORIGEN / TASA_COMPRA_P2P
+- TASA_MERCADO = TASA_VENTA_P2P / TASA_COMPRA_P2P
+- TASA_FINAL = TASA_MERCADO * (1 - (MARGEN / 100))
+- MONTO_A_ENTREGAR = MONTO_ORIGEN * TASA_FINAL
+- TU_GANANCIA = MONTO_ORIGEN * (MARGEN / 100)
+
+--------------------------------------------------------------------------------
+Generado automáticamente por TazaCalculadora - Soporte Técnico
+================================================================================

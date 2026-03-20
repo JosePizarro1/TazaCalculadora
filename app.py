@@ -35,7 +35,7 @@ def fetch_best_rate(fiat: str, trade_type: str, amount: float = 0, asset: str = 
         "merchantCheck": False,
         "page": 1,
         "payTypes": [],
-        "publisherType": None,
+        "publisherType": "merchant", # Solo comerciantes verificados (Pro)
         "rows": 10,
         "tradeType": trade_type,
         "transAmount": amount if amount > 0 else None,
@@ -88,16 +88,12 @@ def remittance():
     if fiat_origin in ["USD", "ECU"] and rate_origin > 1.0: rate_origin = 1.0
     if fiat_dest in ["USD", "ECU"] and rate_dest > 1.0: rate_dest = 1.0
     
-    if rate_origin == 0 or rate_dest == 0:
-        error_msg = ""
-        if rate_origin == 0: error_msg += f"No hay anuncios ni tasa manual para {fiat_origin}. "
-        if rate_dest == 0: error_msg += f"No hay anuncios ni tasa manual para {fiat_dest}."
-        return jsonify({"success": False, "error": error_msg})
-    
-    market_cross_rate = rate_dest / rate_origin
+    # Siempre retornar las tasas individuales que se pudieron obtener
+    both_ok = rate_origin > 0 and rate_dest > 0
+    market_cross_rate = (rate_dest / rate_origin) if both_ok else 0
     
     return jsonify({
-        "success": True,
+        "success": both_ok,
         "rates": {
             "origin_p2p": rate_origin,
             "dest_p2p": rate_dest,
@@ -105,6 +101,24 @@ def remittance():
         },
         "fiat_origin": FIAT_CURRENCIES.get(fiat_origin),
         "fiat_dest": FIAT_CURRENCIES.get(fiat_dest)
+    })
+
+@app.route("/api/fiat_info", methods=["POST"])
+def fiat_info():
+    data = request.get_json()
+    fiat = data.get("fiat")
+    if not fiat: return jsonify({"success": False})
+    
+    rate_buy = fetch_best_rate(fiat, "BUY")
+    rate_sell = fetch_best_rate(fiat, "SELL")
+    
+    return jsonify({
+        "success": True,
+        "fiat": fiat,
+        "binance": {
+            "buy": rate_buy,
+            "sell": rate_sell
+        }
     })
 
 if __name__ == "__main__":

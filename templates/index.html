@@ -42,19 +42,33 @@
 
         <!-- Modal: Tasa Faltante -->
         <div id="missingRateModal" class="startup-modal" style="display: none;">
-            <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-content" style="max-width: 420px;">
                 <div class="modal-header">
-                    <h2>TASA NO DISPONIBLE</h2>
-                    <p id="missingRateText">Binance no tiene anuncios para este país.</p>
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <h2 id="modalTitle" style="margin:0">GESTIONAR TASA</h2>
+                        <button id="btnCloseMissing" style="background:none; border:none; color:white; cursor:pointer; font-size:1.5rem; line-height:1;">&times;</button>
+                    </div>
+                    <p id="missingRateText">Establece las tasas manuales para este país.</p>
                 </div>
                 <div class="modal-body">
                     <div class="modal-rate-card">
-                        <label id="missingRateLabel">Ingresa Tasa Manual</label>
-                        <input type="number" id="inputMissingRate" class="modal-rate-input" placeholder="0.00" step="any">
+                        <label style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 4px; display:block;">COMPRA USDT (como Origen)</label>
+                        <div style="display:flex; gap: 8px; align-items: center;">
+                            <input type="number" id="inputMissingRateBuy" class="modal-rate-input" placeholder="0.00" step="any">
+                            <div id="refBuy" class="binance-ref">Binance: --</div>
+                        </div>
+                    </div>
+                    <div class="modal-rate-card" style="margin-top: 16px;">
+                        <label style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 4px; display:block;">VENTA USDT (como Destino)</label>
+                        <div style="display:flex; gap: 8px; align-items: center;">
+                            <input type="number" id="inputMissingRateSell" class="modal-rate-input" placeholder="0.00" step="any">
+                            <div id="refSell" class="binance-ref">Binance: --</div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button id="btnSaveMissing" class="btn-primary-large">GUARDAR TASA</button>
+                    <button id="btnSaveMissing" class="btn-primary-large">GUARDAR TASAS</button>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); text-align:center; margin-top: 10px;">Deja vacío para usar tasa de Binance</p>
                 </div>
             </div>
         </div>

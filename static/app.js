@@ -27,10 +27,37 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // --- LocalStorage Logic ---
-    let localRates = JSON.parse(localStorage.getItem("manual_rates")) || {};
+    // Formato nuevo: { "VES": { "buy": 58.5, "sell": 57.0 }, "BRL": { "buy": 5.40, "sell": 5.30 } }
+    // "buy" = cuánto cuesta COMPRAR 1 USDT con esa moneda (cuando es ORIGEN)
+    // "sell" = cuánto recibes al VENDER 1 USDT por esa moneda (cuando es DESTINO)
+    let localRates = {};
 
-    function saveLocalRate(fiat, rate) {
-        localRates[fiat] = parseFloat(rate);
+    function loadLocalRates() {
+        try {
+            const stored = JSON.parse(localStorage.getItem("manual_rates")) || {};
+            // Migrar formato viejo (valor simple) al nuevo formato (buy/sell)
+            const migrated = {};
+            for (const [fiat, val] of Object.entries(stored)) {
+                if (typeof val === "number") {
+                    // Formato viejo: un solo número, usarlo para ambos
+                    migrated[fiat] = { buy: val, sell: val };
+                } else if (typeof val === "object" && val !== null) {
+                    migrated[fiat] = val;
+                }
+            }
+            localRates = migrated;
+            localStorage.setItem("manual_rates", JSON.stringify(localRates));
+        } catch {
+            localRates = {};
+        }
+    }
+    loadLocalRates();
+
+    function saveLocalRate(fiat, buyRate, sellRate) {
+        localRates[fiat] = {
+            buy: parseFloat(buyRate) || 0,
+            sell: parseFloat(sellRate) || 0
+        };
         localStorage.setItem("manual_rates", JSON.stringify(localRates));
         renderManagerList();
     }
@@ -43,12 +70,33 @@ document.addEventListener("DOMContentLoaded", () => {
         updateRatesGrid();
     }
 
+    // Obtener tasa manual para cuando la moneda es ORIGEN (comprar USDT)
+    function getManualBuyRate(fiat) {
+        if (localRates[fiat] && localRates[fiat].buy > 0) return localRates[fiat].buy;
+        return 0;
+    }
+
+    // Obtener tasa manual para cuando la moneda es DESTINO (vender USDT)
+    function getManualSellRate(fiat) {
+        if (localRates[fiat] && localRates[fiat].sell > 0) return localRates[fiat].sell;
+        return 0;
+    }
+
     // --- Modals Elements ---
     const missingRateModal = document.getElementById("missingRateModal");
-    const inputMissingRate = document.getElementById("inputMissingRate");
+    const btnCloseMissing = document.getElementById("btnCloseMissing");
+    const inputMissingRateBuy = document.getElementById("inputMissingRateBuy");
+    const inputMissingRateSell = document.getElementById("inputMissingRateSell");
     const btnSaveMissing = document.getElementById("btnSaveMissing");
     const missingRateText = document.getElementById("missingRateText");
+    const modalTitle = document.getElementById("modalTitle");
+    const refBuy = document.getElementById("refBuy");
+    const refSell = document.getElementById("refSell");
     let pendingFiat = null;
+
+    btnCloseMissing.onclick = () => {
+        missingRateModal.style.display = "none";
+    };
 
     const managerModal = document.getElementById("managerModal");
     const btnOpenManager = document.getElementById("btnOpenManager");
@@ -57,23 +105,68 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnClearAll = document.getElementById("btnClearAll");
 
     // --- Missing Rate Modal Logic ---
-    function promptMissingRate(fiat) {
+    async function promptMissingRate(fiat) {
         pendingFiat = fiat;
         const info = FIAT_DATA[fiat];
-        missingRateText.textContent = `Binance no tiene anuncios para ${info.flag} ${info.name}. Establece una tasa manual para continuar.`;
-        inputMissingRate.value = "";
+        
+        // Reset modal state
+        modalTitle.textContent = "GESTIONAR TASA";
+        missingRateText.textContent = `Establece las tasas manuales para ${info.flag} ${info.name}.`;
+        refBuy.textContent = "Buscando...";
+        refSell.textContent = "Buscando...";
+        
+        // Pre-rellenar con valores existentes si los hay
+        const existing = localRates[fiat] || { buy: 0, sell: 0 };
+        inputMissingRateBuy.value = existing.buy > 0 ? existing.buy : "";
+        inputMissingRateSell.value = existing.sell > 0 ? existing.sell : "";
+        
         missingRateModal.style.display = "flex";
+
+        // Intentar obtener tasas de referencia de Binance
+        try {
+            const res = await fetch("/api/fiat_info", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ fiat: fiat })
+            });
+            const data = await res.json();
+            if (data.success) {
+                const bBuy = data.binance.buy;
+                const bSell = data.binance.sell;
+                
+                refBuy.textContent = bBuy > 0 ? `B: ${bBuy.toFixed(2)}` : "B: N/A";
+                refSell.textContent = bSell > 0 ? `B: ${bSell.toFixed(2)}` : "B: N/A";
+
+                if (bBuy === 0 && bSell === 0) {
+                    modalTitle.textContent = "TASA NO DISPONIBLE";
+                    missingRateText.textContent = `Binance no tiene anuncios para ${info.flag} ${info.name}.`;
+                } else {
+                    modalTitle.textContent = "MODIFICAR TASA";
+                    missingRateText.textContent = `Ajusta las tasas manuales para ${info.flag} ${info.name}.`;
+                }
+            }
+        } catch (e) {
+            console.error("Error fetching reference:", e);
+            refBuy.textContent = "B: ERROR";
+            refSell.textContent = "B: ERROR";
+        }
     }
 
     btnSaveMissing.onclick = () => {
-        const rate = parseFloat(inputMissingRate.value);
-        if (rate > 0 && pendingFiat) {
-            saveLocalRate(pendingFiat, rate);
+        const buyRate = parseFloat(inputMissingRateBuy.value) || 0;
+        const sellRate = parseFloat(inputMissingRateSell.value) || 0;
+        
+        if (pendingFiat) {
+            if (buyRate > 0 || sellRate > 0) {
+                // Guardar tasa manual
+                saveLocalRate(pendingFiat, buyRate, sellRate);
+            } else {
+                // Si ambas son 0 o están vacías, borrar la tasa manual
+                deleteLocalRate(pendingFiat);
+            }
             missingRateModal.style.display = "none";
             updateRates();
             updateRatesGrid();
-        } else {
-            alert("Por favor ingresa una tasa válida.");
         }
     };
 
@@ -107,17 +200,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         keys.forEach(fiat => {
             const info = FIAT_DATA[fiat];
-            const rate = localRates[fiat];
+            const rates = localRates[fiat];
             const item = document.createElement("div");
             item.className = "manager-item";
             item.innerHTML = `
                 <div class="manager-info">
                     <span class="manager-country">${info.flag} ${fiat}</span>
-                    <span class="manager-rate">${rate}</span>
+                    <span class="manager-rate" style="font-size: 0.75rem; line-height: 1.3;">
+                        COMPRA: ${rates.buy > 0 ? rates.buy : '—'}<br>
+                        VENTA: ${rates.sell > 0 ? rates.sell : '—'}
+                    </span>
                 </div>
-                <button class="btn-delete-rate" data-fiat="${fiat}">BORRAR</button>
+                <div class="manager-actions">
+                    <button class="btn-edit-rate" data-fiat="${fiat}">EDITAR</button>
+                    <button class="btn-delete-rate" data-fiat="${fiat}">BORRAR</button>
+                </div>
             `;
             managerList.appendChild(item);
+        });
+
+        document.querySelectorAll(".btn-edit-rate").forEach(btn => {
+            btn.onclick = (e) => {
+                managerModal.style.display = "none";
+                promptMissingRate(e.target.dataset.fiat);
+            };
         });
 
         document.querySelectorAll(".btn-delete-rate").forEach(btn => {
@@ -185,8 +291,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 let price = data.success ? data.rates.dest_p2p : 0;
                 let isManual = false;
 
-                if (localRates[fiat]) {
-                    price = localRates[fiat];
+                // Para el grid usamos la tasa SELL (venta de USDT = cuánto recibes)
+                const manualSell = getManualSellRate(fiat);
+                if (manualSell > 0) {
+                    price = manualSell;
                     isManual = true;
                 }
 
@@ -210,10 +318,20 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="rate-value">${price.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         <div class="rate-base">1 USD = ${price.toFixed(2)} ${fiat}</div>
                     `;
+
+                    // Hacer la card clicable para editar
+                    card.style.cursor = "pointer";
+                    card.title = "Clic para establecer tasa manual";
+                    card.onclick = () => promptMissingRate(fiat);
+
                     ratesGrid.appendChild(card);
                 } else {
                     const card = document.createElement("div");
                     card.className = "rate-card rate-card-error";
+                    card.style.cursor = "pointer";
+                    card.title = "Clic para establecer tasa manual";
+                    card.onclick = () => promptMissingRate(fiat);
+
                     card.innerHTML = `
                         <div class="rate-card-header">
                             <div class="rate-card-title">
@@ -251,37 +369,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const data = await response.json();
             
-            if (data.success) {
-                let rates = data.rates;
-                let usedManual = false;
+            // Obtener tasas individuales de Binance (ahora siempre vienen, aunque una sea 0)
+            let rateOriginP2P = (data.rates && data.rates.origin_p2p) ? data.rates.origin_p2p : 0;
+            let rateDestP2P = (data.rates && data.rates.dest_p2p) ? data.rates.dest_p2p : 0;
 
-                if (localRates[origin]) {
-                    rates.origin_p2p = localRates[origin];
-                    usedManual = true;
-                }
-                if (localRates[dest]) {
-                    rates.dest_p2p = localRates[dest];
-                    usedManual = true;
-                }
+            // Sobreescribir SOLO con la tasa manual correspondiente al rol:
+            // - Origen = COMPRAR USDT con esa moneda → usar tasa BUY
+            // - Destino = VENDER USDT por esa moneda → usar tasa SELL
+            const manualOrigin = getManualBuyRate(origin);
+            const manualDest = getManualSellRate(dest);
 
-                if (usedManual) {
-                    rates.market_cross = rates.dest_p2p / rates.origin_p2p;
-                }
+            if (manualOrigin > 0) {
+                rateOriginP2P = manualOrigin;
+            }
+            if (manualDest > 0) {
+                rateDestP2P = manualDest;
+            }
 
-                calculateValues(rates);
+            if (rateOriginP2P > 0 && rateDestP2P > 0) {
+                const crossRate = rateDestP2P / rateOriginP2P;
+                calculateValues({
+                    origin_p2p: rateOriginP2P,
+                    dest_p2p: rateDestP2P,
+                    market_cross: crossRate
+                });
             } else {
-                const rateOrigin = localRates[origin] || 0;
-                const rateDest = localRates[dest] || 0;
-
-                if (rateOrigin > 0 && rateDest > 0) {
-                    calculateValues({
-                        origin_p2p: rateOrigin,
-                        dest_p2p: rateDest,
-                        market_cross: rateDest / rateOrigin
-                    });
-                } else {
-                    if (!localRates[origin] && (!data.rates || data.rates.origin_p2p === 0)) promptMissingRate(origin);
-                    else if (!localRates[dest] && (!data.rates || data.rates.dest_p2p === 0)) promptMissingRate(dest);
+                // Falta una tasa, solicitar al usuario
+                if (rateOriginP2P === 0) {
+                    promptMissingRate(origin);
+                } else if (rateDestP2P === 0) {
+                    promptMissingRate(dest);
                 }
             }
         } catch (error) {

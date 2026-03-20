@@ -730,6 +730,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
 }
 
 .manager-info {
@@ -748,18 +749,52 @@ body {
     font-weight: 800;
 }
 
+.manager-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-edit-rate {
+    background: rgba(240, 185, 11, 0.1);
+    color: var(--gold-primary);
+    border: 1px solid rgba(240, 185, 11, 0.2);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.btn-edit-rate:hover {
+    background: var(--gold-primary);
+    color: #000;
+}
+
 .btn-delete-rate {
     background: rgba(246, 70, 93, 0.1);
     color: #f6465d;
     border: 1px solid rgba(246, 70, 93, 0.2);
-    padding: 6px 10px;
+    padding: 6px 12px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 700;
     transition: var(--transition);
 }
 
 .btn-delete-rate:hover {
     background: #f6465d;
     color: white;
+}
+
+.binance-ref {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    min-width: 100px;
+    white-space: nowrap;
+    border: 1px dashed rgba(255,255,255,0.1);
 }
